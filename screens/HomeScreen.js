@@ -8,22 +8,42 @@ import {
   StatusBar,
   ScrollView,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { MagnifyingGlassIcon, XMarkIcon } from "react-native-heroicons/outline";
 import { MapPinIcon, CalendarDaysIcon } from "react-native-heroicons/solid";
+import { debounce } from "lodash";
 
 import { theme } from "../theme";
 import { weatherImages } from "../constants";
+import { fetchLocations, fetchWeatherForecast } from "../apiCall";
 
 export default function HomeScreen() {
   const [showSearch, toggleSearch] = useState(false);
   const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState({});
 
-  function handleLocation() {}
+  const handleSearch = (search) => {
+    if (search && search.length > 2)
+      fetchLocations({ cityName: search }).then((data) => {
+        setLocations(data);
+      });
+  };
 
-  function handleTextDebounce() {}
+  const handleLocation = (loc) => {
+    setLoading(true);
+    toggleSearch(false);
+    setLocations([]);
+    fetchWeatherForecast({
+      cityName: loc.name,
+      days: "7",
+    }).then((data) => {
+      setLoading(false);
+      setWeather(data);
+    });
+  };
+
+  const handleTextDebounce = useCallback(debounce(handleSearch, 1200));
 
   const { location, current } = weather;
   return (
@@ -36,7 +56,7 @@ export default function HomeScreen() {
       />
       <SafeAreaView className="flex flex-1">
         {/* Search section */}
-        <View style={{ height: "7%" }} className="mx-4 relative z-50">
+        <View style={{ height: "10%" }} className="mt-6 mx-4 relative z-50">
           <View
             className="flex-row justify-end items-center rounded-full"
             style={{
@@ -90,24 +110,25 @@ export default function HomeScreen() {
           ) : null}
         </View>
         {/* Forecast section */}
-        <View className="mx-4 flex justify-center flex-1 mb-2">
+        <View className="mx-4 flex justify-center ">
           {/* Location */}
-          <Text className="text-white text-center text-2xl font-bold">
-            {location?.name},
-            <Text className="text-lg font-semibold text-gray-300">
-              {location?.country}
+          <View className="my-8">
+            <Text className="text-white text-center text-2xl font-bold">
+              {location?.name},{" "}
+              <Text className="text-lg font-semibold text-gray-300">
+                {location?.country}
+              </Text>
             </Text>
-          </Text>
+          </View>
           {/* Weather Icon */}
-          <View className="flex-row justify-center">
+          <View className="flex-row justify-center py-6">
             <Image
-              // source={{uri: 'https:'+current?.condition?.icon}}
               source={weatherImages[current?.condition?.text || "other"]}
               className="w-52 h-52"
             />
           </View>
           {/* Degree Celcuis */}
-          <View className="space-y-2">
+          <View className="space-y-4">
             <Text className="text-center font-bold text-white text-6xl ml-5">
               {current?.temp_c}&#176;
             </Text>
@@ -116,7 +137,7 @@ export default function HomeScreen() {
             </Text>
           </View>
           {/* Other Stats */}
-          <View className="flex-row justify-between mx-4">
+          <View className="flex-row justify-between mx-4 my-4">
             <View className="flex-row space-x-2 items-center">
               <Image
                 source={require("../assets/icons/wind.png")}
@@ -147,7 +168,7 @@ export default function HomeScreen() {
           </View>
         </View>
         {/* Forecast for next day */}
-        <View className="mb-2 space-y-3">
+        <View className="mt-6 mb-2 space-y-3">
           <View className="flex-row items-center mx-5 space-x-2">
             <CalendarDaysIcon size="22" color="white" />
             <Text className="text-white text-base">Daily forecast</Text>
