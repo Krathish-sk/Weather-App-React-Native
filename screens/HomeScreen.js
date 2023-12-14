@@ -17,6 +17,7 @@ import * as Progress from "react-native-progress";
 import { theme } from "../theme";
 import { weatherImages } from "../constants";
 import { fetchLocations, fetchWeatherForecast } from "../apiCall";
+import { getData, storeData } from "../utils/asyncStorage";
 
 export default function HomeScreen() {
   const [showSearch, toggleSearch] = useState(false);
@@ -41,13 +42,19 @@ export default function HomeScreen() {
     }).then((data) => {
       setLoading(false);
       setWeather(data);
+      storeData("city", loc.name);
     });
   };
 
   const handleTextDebounce = useCallback(debounce(handleSearch, 1200));
 
   const fetchMyWeatherData = async () => {
-    fetchWeatherForecast({ cityName: "London", days: "7" }).then((data) => {
+    let myCity = await getData("city");
+    let cityName = "India";
+    if (myCity) {
+      cityName = myCity;
+    }
+    fetchWeatherForecast({ cityName, days: "7" }).then((data) => {
       setWeather(data);
       setLoading(false);
     });
@@ -56,6 +63,8 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchMyWeatherData();
   }, []);
+
+  console.log(weather);
 
   const { location, current } = weather;
   return (
